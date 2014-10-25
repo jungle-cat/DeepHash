@@ -1,4 +1,4 @@
-MillionFaceDB
+DeepHash
 =============
 
-Construct million face images database for research purpose
+Hashing method use Deep Neural Networks
