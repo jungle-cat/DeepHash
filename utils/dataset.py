@@ -9,6 +9,56 @@ import theano.tensor as T
 
 import cPickle, os, gzip, numpy
 
+
+
+class DatasetFactory:
+    
+    class FuncExistError(Exception):
+        pass
+    
+    def __init__(self):
+        '''
+        Allocate 
+        '''
+        self.__funcs = {}
+        
+    def get(self, name):
+        '''
+        Get load function given a specific name
+        
+        :type name: string
+        :param name: ref name of the function
+        '''
+        return self.__funcs[name]
+    
+    def register(self, name, func):
+        '''
+        Register functions to the factory
+        
+        :type name: string
+        :param name: ref name of the function
+        
+        :type func: function
+        :param func: function to be registered
+        '''
+        if self.__funcs.get(name) is not None:
+            raise self.FuncExistError, "ref function %s already exists" % name
+        
+        self.__funcs[name] = func
+        
+    def delete(self, name):
+        '''
+        Delete functions in the factory given a specific name
+        
+        :type name: string
+        :param name: ref name of the function
+        '''
+        if self.__funcs.has_key(name):
+            del self.__funcs[name]
+
+# instantiate a DatasetFactory
+dataset_factory = DatasetFactory()
+
 def load_data(dataset):
     ''' Loads the dataset
     :type dataset: string
@@ -82,3 +132,5 @@ def load_data(dataset):
     
     return [(train_set_x, train_set_y), (valid_set_x, valid_set_y),(test_set_x, test_set_y)]
 
+# register function of loading mnist dataset
+dataset_factory.register('mnist', load_data)
