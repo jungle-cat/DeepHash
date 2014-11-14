@@ -10,31 +10,30 @@ import theano.tensor as T
 class ConvAutoEncoder(object):
     '''
     '''
-    def __init__(self, inputs, filter_shape, nfilters, rng):
+    def __init__(self, inputs, inputs_shape, filter_shape, rng):
         '''
         '''
         self.inputs = inputs
         
-        hidden_layer = ConvSampleLayer(inputs, 
+        hidden_layer = ConvSampleLayer(inputs,
+                                       inputs_shape=inputs_shape, 
                                        filter_shape=filter_shape, 
-                                       nfilters=nfilters, 
-                                       rng=rng)
+                                       rng=rng,
+                                       border_mode='full')
         
-        inputs_shape = self.inputs.shape
-        if len(filter_shape) is 2:
-            filter_shape = (nfilters, inputs_shape[1]) + tuple(filter_shape)
-
-#         inputs_shape_hidden = (inputs_shape[0],
-#                                filter_shape[0],
-#                                inputs_shape[2]+filter_shape[2]-1,
-#                                inputs_shape[3]+filter_shape[3]-1)
+        inputs_shape_hidden = (inputs_shape[0],
+                               filter_shape[0],
+                               inputs_shape[2]+filter_shape[2]-1,
+                               inputs_shape[3]+filter_shape[3]-1)
         filter_shape_hidden = (inputs_shape[1],
                                filter_shape[0],
                                filter_shape[2],
                                filter_shape[3])
         recon_layer = ConvSampleLayer(hidden_layer.outputs, 
+                                      inputs_shape=inputs_shape_hidden,
                                       filter_shape=filter_shape_hidden, 
-                                      nfilters=None)
+                                      rng=rng,
+                                      border_mode='valid')
         
         self.hidden_layer = hidden_layer
         self.recon_layer = recon_layer
