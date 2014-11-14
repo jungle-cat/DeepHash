@@ -13,7 +13,7 @@ import os, random, numpy
 
 from pyDataset.FaceDetector import FaceDetector
 
-def build(base_dir, num_people, num_pfaces, num_max):
+def build_dataset(base_dir, num_people, num_pfaces, num_max):
     
     detector = FaceDetector('haarcascade_frontalface_default.xml')
     
@@ -50,7 +50,7 @@ def build(base_dir, num_people, num_pfaces, num_max):
         for image_name in image_names:
             image_path = os.path.join(desc_path, image_name)
             face_rets = detector.detect(image_path)
-            if face_rets is not None:
+            if face_rets is not None and len(face_rets.faces) > 0:
                 face_images.append(face_rets.faces[0])
                 face_ids.append(i+1)
         
