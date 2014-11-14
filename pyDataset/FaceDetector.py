@@ -4,13 +4,13 @@ Created on Nov 14, 2014
 @author: Feng
 '''
 
-import numpy, cv2
+import cv2
 
 class Face(object):
     def __init__(self, image, rect=None):
         self.image = image
         if rect is not None:
-            self.faces = [self.image[r[0]:r[1], r[2]:r[3]] for r in rect]
+            self.faces = [self.image[r[0]:r[1]+r[0], r[2]:r[3]+r[2]] for r in rect]
         else:
             self.faces = [self.image]
         self.faces = [cv2.resize(face, (120,120), interpolation=cv2.INTER_CUBIC) for face in self.faces]
