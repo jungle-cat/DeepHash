@@ -15,7 +15,7 @@ from pyDataset.FaceDetector import FaceDetector
 
 def build_dataset(base_dir, num_people, num_pfaces, num_max):
     
-    detector = FaceDetector('haarcascade_frontalface_default.xml')
+    detector = FaceDetector('data/haarcascade_frontalface_default.xml')
     
     people_names = os.listdir(base_dir)
     random.shuffle(people_names)
@@ -53,6 +53,16 @@ def build_dataset(base_dir, num_people, num_pfaces, num_max):
             if face_rets is not None and len(face_rets.faces) > 0:
                 face_images.append(face_rets.faces[0])
                 face_ids.append(i+1)
+    
+    assert len(face_images) == len(face_ids)
+    
+    # only num_max faces are used
+    # TODO random select num_max face to return
+    ntotal_faces = len(face_images)
+    if ntotal_faces > num_max and num_max > 0:
+        ntotal_faces = num_max
+        face_images = face_images[0:ntotal_faces]
+        face_ids = face_ids[0:ntotal_faces]
         
     # convert list of faces to tensor like numpy.array
     faces = numpy.asarray(face_images)
@@ -60,4 +70,7 @@ def build_dataset(base_dir, num_people, num_pfaces, num_max):
     
     return (faces, ids)
         
-    
+
+if __name__ == '__main__':
+    base_path = r'/mnt/UDisk/Database/YouTube\ Faces/aligned_images_DB/'
+    rets = build_dataset(base_path, num_people=1000, num_pfaces=200, num_max=100000)
