@@ -19,7 +19,7 @@ class RBM(object):
         '''
         Construct Restricted Boltzmann Machine
         
-        :type inputs: None or theano.tensor.matrix
+        :type inputs: theano.tensor.TensorType
         :param inputs: None for standalone RBM or symbolic inputs
         
         :type nvisible: int
@@ -28,19 +28,19 @@ class RBM(object):
         :type nhidden: int
         :param nhidden: number of hidden units
         
-        :type W: None or theano.tensor.matrix
+        :type W: theano.tensor.TensorType
         :param W: None for standalone RBM or symbolic variable for weights
         
-        :type hbias: None or TensorVariable 
+        :type hbias: theano.tensor.TensorType 
         :param hbias: None for standalone RBM or symbolic variable for hidden bias
         
-        :type vbias: None or TensorVariable
+        :type vbias: theano.tensor.TensorType
         :param vbias: None for standalone RBM or symbolic variable for visible bias
         
         :type numpy_rng: numpy.random.RandomState
         :param numpy_rng: a random number generator used to intialize weights
         
-        :type theano_rng: theano.tensor.shared_randomstream.RandomStreams 
+        :type theano_rng: theano.RandomStreams 
         :param theano_rng: symbolic stand-in for numpy.random.RandomState
         '''
         self.nvisible = nvisible
@@ -74,9 +74,10 @@ class RBM(object):
                 borrow=True
             )
         
-        self.inputs = inputs
-        if not inputs:
+        if inputs is None:
             self.inputs = T.matrix('inputs')
+        else:
+            self.inputs = inputs
         
         self.W = W
         self.hbias = hbias
@@ -156,7 +157,7 @@ class RBM(object):
         return [pre_h1, mean_h1, samples_h1,
                 pre_v1, mean_v1, samples_v1]
     
-    def get_cost_updates(self, lr=0.1, persistent=None, k=1):
+    def get_cost_updates(self, learningrate=0.1, persistent=None, k=1):
         '''
         This function implements one-step of CD-k or PCD-k
         
@@ -194,7 +195,8 @@ class RBM(object):
         cost = T.mean(self.free_energy(self.inputs)) - T.mean(self.free_energy(chain_end))
         gparams = T.grad(cost, self.params, consider_constant=[chain_end])
         for gparam, param in zip(gparams, self.params):
-            updates[param] = param - gparam * T.cast(lr, dtype=theano.config.floatX)
+            updates[param] = param - \
+                gparam * T.cast(learningrate, dtype=theano.config.floatX)
         
         if persistent:
             updates[persistent] = samples_nh[-1]
