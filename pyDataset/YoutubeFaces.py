@@ -15,6 +15,7 @@ from pyDataset.FaceDetector import FaceDetector
 
 def build_dataset(base_dir, num_people, num_pfaces, num_max):
     
+    #TODO specify cascades xml file path
     detector = FaceDetector('data/haarcascade_frontalface_default.xml')
     
     people_names = os.listdir(base_dir)
