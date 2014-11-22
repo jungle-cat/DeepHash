@@ -6,7 +6,7 @@ Created on Nov 13, 2014
 
 from theano import tensor as T
 
-from rbm import RBM
+from .rbm import RBM
 
 class GaussBinaryRBM(RBM):
     '''

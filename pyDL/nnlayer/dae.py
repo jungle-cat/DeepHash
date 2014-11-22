@@ -6,7 +6,7 @@ Created on Nov 13, 2014
 
 import theano, numpy
 
-from ae import AE
+from .ae import AE
 
 
 class DenoisingAE(AE):

@@ -4,7 +4,7 @@ Created on Nov 13, 2014
 @author: Feng
 '''
 
-from pyDL.nnlayer.convlayer import ConvSampleLayer
+from .convlayer import ConvSampleLayer
 import theano.tensor as T
 
 class ConvAutoEncoder(object):
