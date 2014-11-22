@@ -11,8 +11,38 @@ from theano.tensor.nnet import sigmoid
 
 class RBM(object):
     '''
+    A base interface for Restricted Boltzmann Machine (RBM), 
+    implementing the binary-binary case
     '''
-    def __init__(self, inputs, nvisible, nhidden, W=None, hbias=None, vbias=None, numpy_rng=None, theano_rng=None):
+    def __init__(self, inputs, nvisible, nhidden, W=None, hbias=None, 
+                 vbias=None, numpy_rng=None, theano_rng=None):
+        '''
+        Construct Restricted Boltzmann Machine
+        
+        :type inputs: None or theano.tensor.matrix
+        :param inputs: None for standalone RBM or symbolic inputs
+        
+        :type nvisible: int
+        :param nvisble: number of visible units
+        
+        :type nhidden: int
+        :param nhidden: number of hidden units
+        
+        :type W: None or theano.tensor.matrix
+        :param W: None for standalone RBM or symbolic variable for weights
+        
+        :type hbias: None or TensorVariable 
+        :param hbias: None for standalone RBM or symbolic variable for hidden bias
+        
+        :type vbias: None or TensorVariable
+        :param vbias: None for standalone RBM or symbolic variable for visible bias
+        
+        :type numpy_rng: numpy.random.RandomState
+        :param numpy_rng: a random number generator used to intialize weights
+        
+        :type theano_rng: theano.tensor.shared_randomstream.RandomStreams 
+        :param theano_rng: symbolic stand-in for numpy.random.RandomState
+        '''
         self.nvisible = nvisible
         self.nhidden = nhidden
         
@@ -33,19 +63,13 @@ class RBM(object):
             W = theano.shared(value=initW, name='W', borrow=True)
         if hbias is None:
             hbias = theano.shared(
-                value=numpy.zeros(
-                    nhidden,
-                    dtype=theano.config.floatX
-                ), 
+                value=numpy.zeros(nhidden, dtype=theano.config.floatX), 
                 name='hbias',
                 borrow=True
             )
         if vbias is None:
             vbias = theano.shared(
-                value=numpy.zeros(
-                    nvisible,
-                    dtype=theano.config.floatX
-                ),
+                value=numpy.zeros(nvisible, dtype=theano.config.floatX),
                 name='vbias',
                 borrow=True
             )
@@ -65,6 +89,9 @@ class RBM(object):
         '''
         Function to compute the free energy
             $free_energy(v) = -b^T v - \sum_i{log( 1 + e^(c_i+W_i v) )}$
+            
+        :type vsamples: theano.tensor.TensorType
+        :param vsamples: visible units
         '''
         wx_b = T.dot(vsamples, self.W) + self.hbias
         vbias_term = T.dot(vsamples, self.vbias)
@@ -72,10 +99,17 @@ class RBM(object):
         return -hidden_term - vbias_term
     
     def propup(self, vsamples):
+        '''
+        This function propagates the visible units activation uptowards
+        to the hidden units.
+        '''
         pre_activation = T.dot(vsamples, self.W) + self.hbias
         return [pre_activation, sigmoid(pre_activation)]
     
     def sample_h_given_v(self, vsamples):
+        '''
+        This function infers state of visible units given hidden units.
+        '''
         pre_hidden, mean_hidden = self.propup(vsamples)
         hsamples = self.theano_rng.binomial(size=mean_hidden.shape, 
                                             n=1, 
@@ -84,10 +118,17 @@ class RBM(object):
         return [pre_hidden, mean_hidden, hsamples]
     
     def propdown(self, hsamples):
+        '''
+        This function propagates the hidden units activation uptowards
+        to the visible units.
+        '''
         pre_activation = T.dot(hsamples, self.W.T) + self.vbias
         return [pre_activation, sigmoid(pre_activation)]
     
     def sample_v_given_h(self, hsamples):
+        '''
+        This function infers state of hidden units given visible units.
+        '''
         pre_visible, mean_visible = self.propdown(hsamples)
         vsamples = self.theano_rng.binomial(size=mean_visible.shape,
                                             n=1,
@@ -96,18 +137,41 @@ class RBM(object):
         return [pre_visible, mean_visible, vsamples]
     
     def gibbs_hvh(self, hsamples):
+        '''
+        This function implements one-step of Gibbs sampling,
+        starting from hidden units.
+        '''
         pre_v1, mean_v1, samples_v1 = self.sample_v_given_h(hsamples)
         pre_h1, mean_h1, samples_h1 = self.sample_h_given_v(samples_v1)
         return [pre_v1, mean_v1, samples_v1,
                 pre_h1, mean_h1, samples_h1]
     
     def gibbs_vhv(self, vsamples):
+        '''
+        This function implements one-step of Gibbs sampling,
+        starting from visible units.
+        '''
         pre_h1, mean_h1, samples_h1 = self.sample_h_given_v(vsamples)
         pre_v1, mean_v1, samples_v1 = self.sample_v_given_h(samples_h1)
         return [pre_h1, mean_h1, samples_h1,
                 pre_v1, mean_v1, samples_v1]
     
     def get_cost_updates(self, lr=0.1, persistent=None, k=1):
+        '''
+        This function implements one-step of CD-k or PCD-k
+        
+        :type lr: float
+        :param lr: learning rate used to train RBM
+        
+        :type persistent: None or shared variable
+        :param persistent: None for standalone RBM and shared variable 
+            of size (batch size, number of hidden units) containing old 
+            state of Gibbs chain
+        
+        :type k: int
+        :param k: number of Gibbs steps to perform in CD-k/PCD-k
+        
+        '''
         # compute positive phase
         pre_ph, mean_ph, samples_ph = self.sample_h_given_v(self.inputs)
         
@@ -117,13 +181,8 @@ class RBM(object):
             chain_start = persistent
         
         (
-            [pre_nvs,
-             mean_nv,
-             samples_nv,
-             pre_nhs,
-             mean_nh,
-             samples_nh],
-             updates
+            [pre_nvs, mean_nv, samples_nv, pre_nhs, mean_nh, samples_nh], 
+            updates
         ) = theano.scan(
             self.gibbs_hvh,
             outputs_info=[None, None, None, None, None, chain_start],
@@ -146,6 +205,9 @@ class RBM(object):
         return monitoring_cost, updates
     
     def get_pseudo_likelihood_cost(self, updates):
+        '''
+        Stochastic approximation to the psedu-likelihood
+        '''
         bit_i_idx = theano.shared(value=0, name='bit_i_idx')
         xi = T.round(self.inputs)
         
@@ -170,6 +232,9 @@ class RBM(object):
         return cost
     
     def get_reconstruction_cost(self, updates, pre_nv):
+        '''
+        Approximation to the reconstruction error
+        '''
         cross_entropy = T.mean(
             T.sum(self.inputs * T.log(sigmoid(pre_nv)) + 
                   (1-self.inputs) * T.log(1 - sigmoid(pre_nv)),
