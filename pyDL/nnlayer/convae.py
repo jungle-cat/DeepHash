@@ -51,4 +51,3 @@ class ConvAutoEncoder(object):
         
         return (cost, updates)
         
-    def get_reconstruction_cost(self, ):

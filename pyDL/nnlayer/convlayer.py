@@ -68,6 +68,7 @@ class MaxSampleLayer(object):
             pool_out = downsample.max_pool_2d(inputs, ds=pool_size, ignore_border=True)
         else:
             pool_out = inputs
+        
         self.outputs = activator(pool_out + self.b.dimshuffle('x', 0, 'x', 'x'))
         
         self.params = [self.b]
