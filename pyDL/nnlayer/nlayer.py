@@ -60,10 +60,23 @@ class HiddenLayer(object):
         self.W = W
         self.b = b
         
-        linear_output = T.dot(inputs, self.W) + self.b
-        self.outputs = linear_output if activation is None \
+        linear_output = T.dot(self.inputs, self.W) + self.b
+        
+        self.__outputs = linear_output if activation is None \
             else activation(linear_output)
         
-        self.params = [self.W, self.b]
+        self.__params = [self.W, self.b]
         
+    @property
+    def params(self):
+        '''
+        Property to expose an interface for overriding by derived class.
+        '''
+        return self.__params
     
+    @property
+    def outputs(self):
+        '''
+        Property to expose an interface for overriding by derived class.
+        '''
+        return self.__outputs
