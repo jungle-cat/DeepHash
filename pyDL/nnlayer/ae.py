@@ -120,10 +120,8 @@ class AE(object):
         
         gparams = T.grad(cost, self.params)
         
-        updates = [
-            (param, param - learningrate * gparam)
-            for param, gparam in zip(self.params, gparams)
-        ]
+        updates = [(param, param - learningrate * gparam)
+            for param, gparam in zip(self.params, gparams)]
         
         return (cost, updates)
         
