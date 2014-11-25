@@ -19,7 +19,7 @@ install:
   - source activate py26
   - pip install pydot
   - pip install theano
-  - pip install . --no-deps --use-mirrors
+#  - pip install . --no-deps --use-mirrors
 
 script:
   - export THEANO_FLAGS=blas.ldflags="-lblas -lgfortran",warn.ignore_bug_before=all,on_opt_error=raise,on_shape_error=raise
@@ -31,7 +31,7 @@ script:
   - echo "$PART"
 
 
-#after_script:
-after_failure:
+after_script:
+#after_failure:
   - cat /home/travis/.pip/pip.log
 #after_success:
