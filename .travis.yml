@@ -15,8 +15,8 @@ before_install:
 install:
 # We support scipy 0.7.2, but it is not available on conda.
 # So we test with 0.11. Our internal buildbot have 0.7.2.
-  - conda create --yes -q -n py26 python=2.6 numpy=1.6 scipy=0.11 nose=1.1 pip 
-  - source activate py26
+  - conda create --yes -q -n py27 python=2.7 numpy=1.6 scipy=0.11 nose=1.1 pip 
+  - source activate py27
   - pip install pydot
   - pip install theano
 #  - pip install . --no-deps --use-mirrors
@@ -29,6 +29,11 @@ script:
   - df -h
   - ulimit -a
   - echo "$PART"
+  - ls
+  - pwd
+  - export PYTHONPATH=$PYTHONPATH:`pwd`
+  - echo $PYTHONPATH
+  - python pyTest/pyDataset.test/test_ae.py
 
 
 after_script:
