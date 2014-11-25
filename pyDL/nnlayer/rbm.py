@@ -8,6 +8,7 @@ import time, numpy, theano
 from theano import tensor as T
 
 from theano.tensor.nnet import sigmoid
+from theano.tensor.shared_randomstreams import RandomStreams
 
 class RBM(object):
     '''
@@ -40,7 +41,7 @@ class RBM(object):
         :type numpy_rng: numpy.random.RandomState
         :param numpy_rng: a random number generator used to intialize weights
         
-        :type theano_rng: theano.RandomStreams 
+        :type theano_rng: theano.tensor.shared_randomstreams.RandomStreams 
         :param theano_rng: symbolic stand-in for numpy.random.RandomState
         '''
         self.nvisible = nvisible
@@ -49,7 +50,7 @@ class RBM(object):
         if numpy_rng is None:
             numpy_rng = numpy.random.RandomState(int(time.time()))
         if theano_rng is None:
-            theano_rng = theano.RandomStreams(numpy_rng.randint(2**30))
+            theano_rng = RandomStreams(numpy_rng.randint(2**30))
         
         if W is None:
             initW = numpy.asarray(

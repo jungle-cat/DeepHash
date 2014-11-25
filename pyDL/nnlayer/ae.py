@@ -7,6 +7,7 @@ Created on Nov 13, 2014
 import numpy, time, theano
 from theano import tensor as T
 from theano.tensor.nnet import sigmoid
+from theano.tensor.shared_randomstreams import RandomStreams
 
 class AE(object):
     '''
@@ -44,7 +45,7 @@ class AE(object):
         :type numpy_rng: numpy.random.RandomState
         :param numpy_rng: number random generator used to generate weights
         
-        :type theano_rng: theano.RandomStreams
+        :type theano_rng: theano.tensor.shared_randomstreams.RandomStreams
         :param theano_rng: theano random generator; if None is given one is 
                            generated based on a seed drawn from `numpy_rng`
         
@@ -55,7 +56,7 @@ class AE(object):
         if not numpy_rng:
             numpy_rng = numpy.random.RandomState( int(time.time()) )
         if not theano_rng:
-            theano_rng = theano.RandomStreams(numpy_rng.randint(2**30))
+            theano_rng = RandomStreams(numpy_rng.randint(2**30))
         
         if not W:
             initW = numpy.asarray(
