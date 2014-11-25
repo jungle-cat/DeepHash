@@ -39,7 +39,7 @@ class ConvAutoEncoder(object):
         self.recon_layer = recon_layer
         self.params = hidden_layer.params + recon_layer.params
     
-    def get_cost_update(self, learningrate=0.1):
+    def get_cost_updates(self, learningrate=0.1):
         '''
         '''
         L = T.sum(T.pow(T.sub(self.recon_layer.outputs, self.inputs), 2), axis=1)

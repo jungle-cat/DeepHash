@@ -80,3 +80,10 @@ class HiddenLayer(object):
         Property to expose an interface for overriding by derived class.
         '''
         return self.__outputs
+    
+    @property
+    def dims(self):
+        '''
+        Property that return input dims and output dims of HiddenLayer
+        '''
+        return self.W.get_value(borrow=True).shape
