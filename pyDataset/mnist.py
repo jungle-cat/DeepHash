@@ -61,7 +61,6 @@ def _loadmnist(dataset):
 class MNIST(BaseDataset):
     def __init__(self, dataset, *args, **kwargs):
         super(MNIST, self).__init__(*args, **kwargs)
-        return self.load(dataset)
     
     def load(self, dataset=None):
         return _loadmnist(dataset)

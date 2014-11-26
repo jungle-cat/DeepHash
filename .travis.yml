@@ -5,38 +5,32 @@ python:
 # command to install dependencies
 before_install:
   - sudo apt-get install -q libatlas3gf-base libatlas-dev liblapack-dev gfortran
-# Install miniconda to avoid compiling scipy
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  
+  # install miniconda to avoid compiling scipy
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh && chmod +x miniconda.sh && ./miniconda.sh -b
+  - export PATH=$HOME/miniconda/bin:$PATH
+  
+  # update conda to latest version
   - conda update --yes conda
 
 install:
-# We support scipy 0.7.2, but it is not available on conda.
-# So we test with 0.11. Our internal buildbot have 0.7.2.
-  - conda create --yes -q -n py27 python=2.7 numpy=1.6 scipy=0.11 nose=1.1 pip 
-  - source activate py27
-  - pip install pydot
-  - pip install theano
-#  - pip install . --no-deps --use-mirrors
+  # create conda environment called `pytheano27` with basic python library support
+  - conda create --yes -q -n pytheano27 python=2.7 numpy=1.8 scipy=0.14 theano=0.6
+  - source activate pytheano27
 
 script:
+  # set THEANO_FLAGS 
   - export THEANO_FLAGS=blas.ldflags="-lblas -lgfortran",warn.ignore_bug_before=all,on_opt_error=raise,on_shape_error=raise
-  - python --version
-  - uname -a
-  - free -m
-  - df -h
-  - ulimit -a
-  - echo "$PART"
-  - ls
-  - pwd
-  - export PYTHONPATH=$PYTHONPATH:`pwd`
-  - echo $PYTHONPATH
+  
+  # set PYTHONPATH
+  - export PYTHONPATH=$PYTHONPATH:$PWD
+  
+  - env
+  
+  # run the testing scripts
   - python pyTest/pyDataset.test/test_ae.py
 
 
-after_script:
+#after_script:
 #after_failure:
-  - cat /home/travis/.pip/pip.log
 #after_success:
