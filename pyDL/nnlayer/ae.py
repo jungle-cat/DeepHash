@@ -106,23 +106,27 @@ class AE(object):
         Proxy function for geting inputs
         '''
         return inputs
-    
-    def get_cost_updates(self, learningrate):
-        '''
-        Compute the cost and updates for one training step of AE
-        '''
-        x = self.get_inputs(self.inputs)
+
+    def costs(self):
+        x = self.inputs
         y = self.encode(x)
         z = self.decode(y)
         
         L = - T.sum(self.inputs * T.log(z) + (1-self.inputs) * T.log(1-z), 
                     axis=1)
-        cost = T.mean(L)
+        return T.mean(L)
+    
+    def get_cost_updates(self, learningrate):
+        '''
+        Compute the cost and updates for one training step of AE
+        '''
+        
+        cost = self.costs()
         
         gparams = T.grad(cost, self.params)
         
         updates = [(param, param - learningrate * gparam)
-            for param, gparam in zip(self.params, gparams)]
+                   for param, gparam in zip(self.params, gparams)]
         
         return (cost, updates)
         
