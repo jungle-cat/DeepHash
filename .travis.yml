@@ -28,8 +28,7 @@ script:
   - env
   
   # run the testing scripts
-  - python pyTest/pyDataset.test/test_ae.py
-  - python pyTest/pyDataset.test/test_dae.py
+  - python pyTest/test_hash.py
 
 
 #after_script:
