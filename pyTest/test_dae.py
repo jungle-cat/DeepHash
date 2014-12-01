@@ -33,7 +33,7 @@ class DenoisingAETestCase(unittest.TestCase):
         # get current file directory and generate 
         curr_dir = os.path.split(__file__)[0]
         print curr_dir
-        s = os.path.join(curr_dir, '..', '..', 'data','mnist.pkl.gz')
+        s = os.path.join(curr_dir, '..', 'data','mnist.pkl.gz')
         print s
         print os.path.abspath(s)
         
