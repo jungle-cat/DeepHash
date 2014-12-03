@@ -29,14 +29,15 @@ class DeepHashLayer(object):
             )
             W = theano.shared(value=initW, name='W', borrow=True)
         if b is None:
-            b = theano.shared(value=numpy.zeros((nout,),
-                                                dtype=theano.config.floatX),
-                              name='b', 
-                              borrow=True
+            b = theano.shared(
+                value=numpy.zeros((nout,), dtype=theano.config.floatX),
+                name='b', 
+                borrow=True
             )
         self.inputs = inputs
         self.W = W
         self.b = b
+        self.params = [self.W, self.b]
     
     @property
     def predict_y(self):

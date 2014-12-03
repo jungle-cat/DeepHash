@@ -25,8 +25,6 @@ script:
   # set PYTHONPATH
   - export PYTHONPATH=$PYTHONPATH:$PWD
   
-  - env
-  
   # run the testing scripts
   - python pyTest/test_hash.py
 
