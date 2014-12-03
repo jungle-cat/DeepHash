@@ -85,8 +85,9 @@ class AE(object):
         self.W_prime = self.W.T
         self.b_prime = vbias
         
-        self.theano_rng = theano_rng
+        self.shape = nvisible, nhidden
         
+        self.theano_rng = theano_rng
         self.params = [self.W, self.b, self.b_prime]
     
     def encode(self, vsamples):

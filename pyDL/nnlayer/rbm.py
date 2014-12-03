@@ -85,6 +85,8 @@ class RBM(object):
         self.vbias = vbias
         self.theano_rng = theano_rng
         
+        self.shape = nvisible, nhidden
+        
         self.params = [self.W, self.hbias, self.vbias]
         
     def free_energy(self, vsamples):

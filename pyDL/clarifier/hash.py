@@ -40,7 +40,7 @@ class DeepHashLayer(object):
         self.params = [self.W, self.b]
     
     @property
-    def predict_y(self):
+    def y_pred(self):
         return sigmoid(T.dot(self.inputs, self.W) + self.b)
         
     def costs(self, y):
@@ -53,7 +53,7 @@ class DeepHashLayer(object):
         
         # compute D-S
         D = T.diag(T.sum(S,axis=0)) - S
-        cost = T.mean( T.dot( T.dot(self.predict_y, D), self.predict_y.T ) / self.b.shape[0])
+        cost = T.mean( T.dot( T.dot(self.y_pred.T, D), self.y_pred ) / self.b.shape[0])
         
         return cost
     

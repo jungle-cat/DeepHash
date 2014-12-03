@@ -15,32 +15,27 @@ class NativeMLP(object):
     '''
     '''
     
-    def __init__(self, inputs, nin, nout, nn_size, classifier=None, 
+    def __init__(self, inputs, nin, nout, nnsize, classifier=None, 
                  numpy_rng=None, theano_rng=None, activation=T.nnet.sigmoid):
         '''
-        :type inputs: theano.tensor.TensorType
-        :param inputs: symbolic variable of the [minibatch] inputs
-        
-        :type nin: int
-        :param nin: number of input dims
-        
-        :type nout: int
-        :param nout: number of output dims
-        
-        :type size: list or tuple of ints
-        :param size: intermediate layers size, must be not empty
-        
-        :type classifier: function or class type
-        :param classifier: classifier ops that takes inputs/outputs of MLP as 
-                           its inputs
-        
-        :type numpy_rng: numpy.random.RandomState
-        :param numpy_rng: a random number generator for initialize weights
-        
-        :type theano_rng: theano.tensor.shared_randomstreams.RandomStreams
-        :param theano_rng: theano random generator.
-        
-        :type activation
+        Parameters
+        ----------
+        inputs: theano.tensor.TensorType or None
+            symbolic variable of the [minibatch] inputs
+        nin: int
+            number of input dims
+        nout: int
+            number of output dims
+        nnsize: list or tuple of ints
+            intermediate layers size, must be not empty
+        classifier: function, optional
+            classifier ops that takes inputs/outputs of MLP as its inputs
+        numpy_rng: numpy.random.RandomState, optional
+            a random number generator for initialize weights
+        theano_rng: theano.tensor.shared_randomstreams.RandomStreams , optional
+            theano random generator.
+        activation: theano.Op or function, optional
+            non-linearity to be applied in the hidden layer
         '''
         if numpy_rng is None:
             numpy_rng = numpy.random.RandomState( int(time.time()) )
@@ -53,7 +48,7 @@ class NativeMLP(object):
             self.inputs = inputs
                 
         self.layers = []
-        self.nlayers = len(nn_size)
+        self.nlayers = len(nnsize)
         self.params = []
         
         # allocate hidden layers for native MLP networks
@@ -62,12 +57,12 @@ class NativeMLP(object):
                 input_size = nin
                 layer_inputs = self.inputs
             else:
-                input_size = nn_size[i-1]
+                input_size = nnsize[i-1]
                 layer_inputs = self.layers[-1].outputs
             
             hidden_layer = HiddenLayer(inputs=layer_inputs, 
                                        nin=input_size, 
-                                       nout=nn_size[i], 
+                                       nout=nnsize[i], 
                                        activation=activation, 
                                        numpy_rng=numpy_rng)
             
@@ -85,22 +80,57 @@ class NativeMLP(object):
         
     def costs(self, y):
         '''
+        Parameters
+        ----------
+        y: tensor-like variable 
+            benchmark of desired prediction.
+        
+        Returns
+        -------
+        cost: tensor-like variable
+            symbolic cost w.r.t. the parameters.
         '''
         return self.class_layer.costs(y)
     
     def errors(self, y):
         '''
+        Parameters
+        ----------
+        y: tensor-like variable 
+            benchmark of desired prediction
+        
+        Returns
+        -------
+        error: tensor-like variable
+            symbolic errors.
         '''
         return self.class_layer.errors(y)
     
     def get_cost_updates(self, learningrate, y):
+        '''
+        Parameters
+        ----------
+        learningrate: float
+            the learning rates
+        y: tensor-like variable 
+            benchmark of desired prediction
+        
+        Returns
+        -------
+        cost: tensor-like variable
+            symbolic cost w.r.t. the parameters.
+        updates: dict 
+            a dictionary with shared variables in self.params as keys and 
+            a symbolic expression of how they are to be updated each
+            SGD step as values.
+        '''
         cost = self.costs(y)
         
         gparams = T.grad(cost, self.params)
         updates = [(param, param - gparam * learningrate)
                    for param, gparam in zip(self.params, gparams)]
         
-        return (cost, updates)
+        return cost, updates
     
 
 class LayerWiseMLP(NativeMLP):
@@ -112,11 +142,18 @@ class LayerWiseMLP(NativeMLP):
                                            activation)
     
     def construct_layerwise(self):
+        '''
+        This function is a common interface that constructs layer-wise 
+        training, such as AutoEncoders and RBMs.
+        '''
         raise NotImplementedError('This is a interface, method only '
             'implemented in derived class.')
     
     def pretrain_funcs(self, trainx, batchsize, *args, **kwargs):
         '''
+        Returns a list of pretraining functions for one step traning of each 
+        layer.
+        
         Parameters
         ----------
         trainx: tensor-like
@@ -152,9 +189,10 @@ class LayerWiseMLP(NativeMLP):
             pretrain_fns.append(fn)
         return pretrain_fns
     
-    def finetuning_funcs(self, batchsize, trainset, testset=None, 
+    def finetune_funcs(self, batchsize, trainset, testset=None, 
                          validset=None, *args, **kwargs):
         '''
+        Returns finetuning function for one-step training.
         
         Paramters
         ---------
