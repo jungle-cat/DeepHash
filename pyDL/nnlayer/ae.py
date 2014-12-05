@@ -15,40 +15,28 @@ class AE(object):
     def __init__(self, inputs, nvisible, nhidden, W=None, vbias=None, 
                  hbias=None, numpy_rng=None, theano_rng=None):
         '''
-        Construct native Auto Encoder
-        
-        :type inputs: theano.tensor.TensorType
-        :param inputs: a symbolic description of the input or None for
-                       standalone AE
-        
-        :type nvisible: int
-        :param nvisible: number of visible units
-        
-        :type nhidden: int
-        :param nhidden: number of hidden units
-        
-        :type W: theano.tensor.TensorType
-        :param W: theano variable pointing to a set of weights that should 
-                  be shared blong AE and another architecture; None for 
-                  standalone AE
-        
-        :type vbias: theano.tensor:TensorType
-        :param vbias: theano variable pointing to a set of weights that should 
-                      be shared blong AE and another architecture; None for 
-                      standalone AE
-        
-        :type hbias: theano.tensor:TensorType
-        :param hbias: theano variable pointing to a set of weights that should 
-                      be shared blong AE and another architecture; None for 
-                      standalone AE
-        
-        :type numpy_rng: numpy.random.RandomState
-        :param numpy_rng: number random generator used to generate weights
-        
-        :type theano_rng: theano.tensor.shared_randomstreams.RandomStreams
-        :param theano_rng: theano random generator; if None is given one is 
-                           generated based on a seed drawn from `numpy_rng`
-        
+        Parameters
+        ----------
+        inputs: theano.tensor.TensorType
+            a symbolic description of the input or None for standalone AE
+        nvisible: int
+            number of visible units
+        nhidden: int
+            number of hidden units
+        W: theano.tensor.TensorType, optional
+            theano variable pointing to a set of weights that should be shared 
+            blong AE and another architecture; None for standalone AE
+        vbias: theano.tensor:TensorType, optional
+            theano variable pointing to a set of weights that should be shared 
+            blong AE and another architecture; None for standalone AE
+        hbias: theano.tensor:TensorType, optional
+            theano variable pointing to a set of weights that should be shared 
+            blong AE and another architecture; None for standalone AE
+        numpy_rng: numpy.random.RandomState, optional
+            number random generator used to generate weights
+        theano_rng: theano.tensor.shared_randomstreams.RandomStreams, optional
+        theano random generator; if None is given one is generated based on a 
+            seed drawn from `numpy_rng`
         '''
         self.nvisible = nvisible
         self.nhidden= nhidden
@@ -125,7 +113,6 @@ class AE(object):
         cost = self.costs()
         
         gparams = T.grad(cost, self.params)
-        
         updates = [(param, param - learningrate * gparam)
                    for param, gparam in zip(self.params, gparams)]
         
