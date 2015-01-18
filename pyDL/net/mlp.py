@@ -46,7 +46,9 @@ class NativeMLP(object):
             self.inputs = T.matrix('inputs')
         else:
             self.inputs = inputs
-                
+        
+        self.shape = nin, nout
+        
         self.layers = []
         self.nlayers = len(nnsize)
         self.params = []
@@ -149,7 +151,7 @@ class LayerWiseMLP(NativeMLP):
         raise NotImplementedError('This is a interface, method only '
             'implemented in derived class.')
     
-    def pretrain_funcs(self, trainx, batchsize, *args, **kwargs):
+    def pretrain_funcs(self, *args, **kwargs):
         '''
         Returns a list of pretraining functions for one step traning of each 
         layer.
@@ -169,26 +171,23 @@ class LayerWiseMLP(NativeMLP):
         # construct layers for layer-wise training
         pair_layers = self.construct_layerwise()
         
-        index = T.lscalar('index')
+        x = T.matrix('x')
         learningrate = T.scalar('learningrate')
-        
-        batch_begin = index * batchsize
-        batch_end = batch_begin + batchsize
         
         pretrain_fns = []
         for layer in pair_layers:
             cost, updates = layer.get_cost_updates(learningrate, 
-                                                   *args, 
+                                                   *args,
                                                    **kwargs)
             fn = theano.function(
-                inputs=[index, theano.Param(learningrate, default=0.1)],
+                inputs=[x, theano.Param(learningrate, default=0.1)],
                 outputs=cost,
-                updates=updates,
-                givens={self.inputs: trainx[batch_begin:batch_end]}
+                updates=updates
             )
             pretrain_fns.append(fn)
+        
         return pretrain_fns
-    
+            
     def finetune_funcs(self, batchsize, trainset, testset=None, 
                          validset=None, *args, **kwargs):
         '''
@@ -208,6 +207,8 @@ class LayerWiseMLP(NativeMLP):
         Returns
         -------
         finetune_fns: compiled function instance
+        valid_score:
+        test_SCORE
         '''
         trainx, trainy = trainset
         index = T.lscalar('index')
@@ -229,5 +230,39 @@ class LayerWiseMLP(NativeMLP):
                 y: trainy[batch_begin:batch_end]
             }
         )
-        return finetune_fns
         
+        if testset:
+            testx, testy = testset
+            ntest_batches = testx.get_value(borrow=True).shape[0] / batchsize
+            
+            test_score_i = theano.function(
+                inputs=[index],
+                outputs=self.errors(y),
+                givens={
+                    self.inputs: testx[batch_begin:batch_end],
+                    y:testy[batch_begin:batch_end]
+                }
+            )
+            def test_score():
+                return [test_score_i(i) for i in xrange(ntest_batches)]
+        else:
+            test_score = None
+        
+        if validset:
+            validx, validy = testset
+            nvalid_batches = validx.get_value(borrow=True).shape[0] / batchsize
+            
+            valid_score_i = theano.function(
+                inputs=[index],
+                outputs=self.errors(y),
+                givens={
+                    self.inputs: validx[batch_begin:batch_end],
+                    y:validy[batch_begin:batch_end]
+                }
+            )
+            def valid_score():
+                return [valid_score_i(i) for i in xrange(nvalid_batches)]
+        else: 
+            valid_score = None
+        
+        return finetune_fns, valid_score, test_score

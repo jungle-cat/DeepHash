@@ -49,7 +49,7 @@ class AETestCase(unittest.TestCase):
         
         dh = DeepHashLayer(x, 28*28, 48, numpy_rng=numpy_rng)
         cost = dh.costs(y)
-        gparams = [T.grad(cost, param) for param in dh.params]
+        gparams = T.grad(cost, dh.params)
         updates = [(param, param-0.01*gparam) for param, gparam in zip(dh.params, gparams)]
         
         train_da = theano.function(

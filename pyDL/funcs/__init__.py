@@ -6,3 +6,4 @@ Created on Nov 13, 2014
 
 
 from theano.tensor.nnet import sigmoid
+from .distance import euclid_dist
