@@ -1,53 +1,149 @@
 '''
-Created on Nov 13, 2014
+Created on Feb 1, 2015
 
 @author: Feng
 '''
 
-from .convlayer import ConvSampleLayer
-import theano.tensor as T
+# 
+import numpy
+import theano
+from theano.tensor.nnet import conv2d
 
-class ConvAutoEncoder(object):
-    '''
-    '''
-    def __init__(self, inputs, inputs_shape, filter_shape, rng):
+
+from pyDL.nnlayer.autoencoder import AbstractAutoencoder
+from pyDL.utils.rng import make_numpy_rng
+from pyDL.state import Conv2DState
+
+
+class Conv2DAutoencoder(AbstractAutoencoder):
+    def __init__(self, nkernels, kernel_size, act_enc, act_dec, numpy_rng=None, 
+                 border_type='valid', inputs_state=None, batch_size=None, 
+                 kernels=None, bias=None, invbias=None, **kwargs):
         '''
+        Parameters
+        ----------
+        nkernels: int
+            number of kernels
+        kernel_size: tuple or list of 2
+            (filter height, filter width)
+        act_enc: 
+        act_dec:
+            nonlinear activation for encoder/decoder
+        numpy_rng:
+        border_type: str
+            'valid' or 'full'
+        inputs_state: tuple/list or Conv2DState
+            inputs_state can be formed as a tuple/list like ([nchannels=1], 
+            height, width)
         '''
-        self.inputs = inputs
         
-        hidden_layer = ConvSampleLayer(inputs,
-                                       inputs_shape=inputs_shape, 
-                                       filter_shape=filter_shape, 
-                                       rng=rng,
-                                       border_mode='full')
+        if numpy_rng is None:
+            numpy_rng = make_numpy_rng()
         
-        inputs_shape_hidden = (inputs_shape[0],
-                               filter_shape[0],
-                               inputs_shape[2]+filter_shape[2]-1,
-                               inputs_shape[3]+filter_shape[3]-1)
-        filter_shape_hidden = (inputs_shape[1],
-                               filter_shape[0],
-                               filter_shape[2],
-                               filter_shape[3])
-        recon_layer = ConvSampleLayer(hidden_layer.outputs, 
-                                      inputs_shape=inputs_shape_hidden,
-                                      filter_shape=filter_shape_hidden, 
-                                      rng=rng,
-                                      border_mode='valid')
+        self.numpy_rng = numpy_rng
         
-        self.hidden_layer = hidden_layer
-        self.recon_layer = recon_layer
-        self.params = hidden_layer.params + recon_layer.params
+        self._act_enc = act_enc
+        self._act_dec = act_dec
+        self._nkernels = nkernels
+        self._kernelsize = kernel_size
+        
+        self._border_type = border_type
+        if border_type == 'valid':
+            self._inv_border_type = 'full'
+        else:
+            self._inv_border_type = 'valid'
+        
+        if inputs_state is not None:
+            Conv2DAutoencoder.setup(self, inputs_state, batch_size, 
+                                    kernels, bias, invbias)
     
-    def get_cost_updates(self, learningrate=0.1):
+    def setup(self, inputs_state, batch_size=None, kernels=None, bias=None,
+              invbias=None, **kwargs):
         '''
         '''
-        L = T.sum(T.pow(T.sub(self.recon_layer.outputs, self.inputs), 2), axis=1)
-        cost = 0.5*T.mean(L)
-        grads = T.grad(cost, self.params)
+        if isinstance(inputs_state, (tuple, list)):
+            if len(inputs_state) == 2:
+                inputs_state = (1,) + inputs_state
+            assert len(inputs_state) == 3 
+            inputs_state = Conv2DState(shape=inputs_state[1:], nchannels=inputs_state[0])
         
-        updates = [(param_i, param_i-learningrate*grad_i) 
-                   for param_i, grad_i in zip(self.params, grads)]
+        nchannels = inputs_state.nchannels
         
-        return (cost, updates)
+        # filter_shape is a 4-dim tuple of format: 
+        # [num input feature maps, num filters, kernel height, kernel width]
+        filter_shape = (self._nkernels, 
+                        nchannels, 
+                        self._kernelsize[0], 
+                        self._kernelsize[1])
         
+        if kernels is None:
+            fan_in = numpy.prod(filter_shape[1:])
+            fan_out = filter_shape[0] * numpy.prod(filter_shape[2:])
+            W_bound = numpy.sqrt(6. / (fan_in + fan_out))
+            kernels = theano.shared(
+                        value=numpy.asarray(
+                            self.numpy_rng.uniform(low=-W_bound,
+                                                   high=W_bound,
+                                                   size=filter_shape),
+                            dtype=theano.config.floatX
+                        ),
+                        name='conv_w', borrow=True
+            )
+            
+        assert kernels.get_value(borrow=True).shape == filter_shape
+        
+        # note that all bias in the same channel are constrained to be the same.
+        # TODO add functions making the bias are learnt from each position
+        if bias is None:
+            bias = theano.shared(value=numpy.zeros(self._nkernels, 
+                                                   dtype=theano.config.floatX),
+                                 name='bias', borrow=True)
+        if invbias is None:
+            invbias = theano.shared(value=numpy.zeros(nchannels,
+                                                      dtype=theano.config.floatX),
+                                    name='inv_bias', borrow=True)
+        
+        
+        self._kernels = kernels
+        self._bias = bias
+        
+        self._invbias = invbias
+        self._kernels_prime = self._kernels.dimshuffle(1,0,3,2)
+        
+        self._filter_shape = filter_shape
+        # _image_shape is used in theano.tensor.nnet.conv.conv2d
+        self._image_shape = (batch_size, 
+                             nchannels, 
+                             inputs_state.shape[0], 
+                             inputs_state.shape[1])
+        
+        # set the state of inputs and outputs
+        self._instate = inputs_state
+        if self._border_type == 'valid':
+            out_shape = [self._instate.shape[0] - self._kernelsize[0] + 1,
+                         self._instate.shape[1] - self._kernelsize[1] + 1]
+        elif self._border_type == 'full':
+            out_shape = [self._instate.shape[0] + self._kernelsize[0] - 1,
+                         self._instate.shape[1] + self._kernelsize[1] - 1]
+        self._outstate = Conv2DState(shape=out_shape, nchannels=self._nkernels)
+        
+        # set the params 
+        self._params = [self._kernels, self._bias]
+    
+    
+    def encode(self, inputs):
+        z = conv2d(inputs, filters=self._kernels, filter_shape=self._filter_shape, 
+                   image_shape=self._image_shape, border_mode=self._border_type)
+        b = self._bias.dimshuffle('x', 0, 'x', 'x')
+        
+        return self._act_enc(z + b)
+    
+    def decode(self, hiddens):
+        z = conv2d(hiddens, filters=self._kernels_prime, filter_shape=self._image_shape,
+                   image_shape=self._filter_shape, border_mode=self._inv_border_type)
+        b = self._invbias.dimshuffle('x', 0, 'x', 'x')
+        return self._act_dec(z + b)
+    
+    def fprop(self, inputs):
+        return self.encode(inputs)
+    
