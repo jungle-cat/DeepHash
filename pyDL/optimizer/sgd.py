@@ -83,7 +83,7 @@ class SGD(object):
                                           name='sgd_update',
                                           on_unused_input='ignore')
         
-    def train(self, dataset, batch_size):
+    def train(self, dataset, batch_size, mode='random'):
         '''
         Perform training for each epoch.
         
@@ -96,7 +96,7 @@ class SGD(object):
             The size of minibatch.
         '''
         
-        iterator = dataset.iterator(batch_size=batch_size)
+        iterator = dataset.iterator(batch_size=batch_size, mode=mode)
         
         for batch in iterator:
             self.sgd_update(*batch)
