@@ -12,6 +12,7 @@ from theano.tensor.nnet import sigmoid
 
 # Local imports
 from pyDL.nnlayer.layer import Layer
+from pyDL.state import VectorState
 from pyDL.utils.rng import make_numpy_rng
 
 
@@ -31,10 +32,8 @@ class AbstractAutoencoder(Layer):
 
 class Autoencoder(AbstractAutoencoder):
     def __init__(self, nout, numpy_rng=None, act_enc=sigmoid, act_dec=sigmoid, 
-                 inputs_state=None, weights=None, visbias=None, hidbias=None):
-        if numpy_rng is None:
-            numpy_rng = make_numpy_rng()
-        self.rng = numpy_rng
+                 inputs_state=None, numpy_rng=None, weights=None, visbias=None, 
+                 hidbias=None):
         
         self.nout = nout
         self.act_enc = act_enc
@@ -42,16 +41,22 @@ class Autoencoder(AbstractAutoencoder):
         
         if inputs_state is not None:
             # avoid the base class calling the method of derived class
-            Autoencoder.setup(self,inputs_state, weights, visbias, hidbias)
+            Autoencoder.setup(self, inputs_state, numpy_rng, weights, 
+                              visbias, hidbias)
         
         
-    def setup(self, inputs_state, weights=None, visbias=None, hidbias=None, **kwargs):
-        
+    def setup(self, inputs_state, numpy_rng=None, weights=None, visbias=None, 
+              hidbias=None, **kwargs):
         if isinstance(inputs_state, int):
-            inputs_state = VectorSpace(inputs_state)
+            inputs_state = VectorState(inputs_state)
         
         nvis, = inputs_state.shape
         nhid = self.nout
+        
+        if numpy_rng is None:
+            numpy_rng = make_numpy_rng()
+        self.rng = numpy_rng
+
         
         if weights is None:
             init_weights = numpy.asarray(
@@ -77,7 +82,7 @@ class Autoencoder(AbstractAutoencoder):
         
         # set the state of inputs and outputs
         self._instate = inputs_state
-        self._outstate = VectorSpace(nhid)
+        self._outstate = VectorState(nhid)
         
         # set the parameters of auto encoder
         self._params = [self._weights, self._visbias, self._hidbias]

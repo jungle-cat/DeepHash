@@ -26,21 +26,17 @@ class Conv2DAutoencoder(AbstractAutoencoder):
             number of kernels
         kernel_size: tuple or list of 2
             (filter height, filter width)
-        act_enc: 
-        act_dec:
+        act_enc: callable object
+        act_dec: callable object
             nonlinear activation for encoder/decoder
-        numpy_rng:
+        numpy_rng: numpy.random.RandoState
+            Random number generator of numpy.
         border_type: str
             'valid' or 'full'
         inputs_state: tuple/list or Conv2DState
             inputs_state can be formed as a tuple/list like ([nchannels=1], 
             height, width)
         '''
-        
-        if numpy_rng is None:
-            numpy_rng = make_numpy_rng()
-        
-        self.numpy_rng = numpy_rng
         
         self._act_enc = act_enc
         self._act_dec = act_dec
@@ -54,20 +50,23 @@ class Conv2DAutoencoder(AbstractAutoencoder):
             self._inv_border_type = 'valid'
         
         if inputs_state is not None:
-            Conv2DAutoencoder.setup(self, inputs_state, batch_size, 
+            Conv2DAutoencoder.setup(self, inputs_state, numpy_rng, batch_size, 
                                     kernels, bias, invbias)
     
-    def setup(self, inputs_state, batch_size=None, kernels=None, bias=None,
-              invbias=None, **kwargs):
+    def setup(self, inputs_state, numpy_rng=None, batch_size=None, kernels=None, 
+              bias=None, invbias=None, **kwargs):
         '''
         '''
         if isinstance(inputs_state, (tuple, list)):
             if len(inputs_state) == 2:
-                inputs_state = (1,) + inputs_state
+                inputs_state = (1,) + tuple(inputs_state)
             assert len(inputs_state) == 3 
             inputs_state = Conv2DState(shape=inputs_state[1:], nchannels=inputs_state[0])
-        
         nchannels = inputs_state.nchannels
+
+        if numpy_rng is None:
+            numpy_rng = make_numpy_rng()
+        self.numpy_rng = numpy_rng
         
         # filter_shape is a 4-dim tuple of format: 
         # [num input feature maps, num filters, kernel height, kernel width]
@@ -89,7 +88,6 @@ class Conv2DAutoencoder(AbstractAutoencoder):
                         ),
                         name='conv_w', borrow=True
             )
-            
         assert kernels.get_value(borrow=True).shape == filter_shape
         
         # note that all bias in the same channel are constrained to be the same.

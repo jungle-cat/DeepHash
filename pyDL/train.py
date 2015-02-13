@@ -4,8 +4,6 @@ Created on Feb 3, 2015
 @author: Feng
 '''
 
-from datetime import datetime
-
 class Trainer(object):
     def __init__(self, dataset, model, algorithm, save_path=None, save_freq=0):
         self.dataset = dataset
