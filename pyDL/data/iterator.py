@@ -5,11 +5,12 @@ Created on Feb 6, 2015
 '''
 
 import numpy
+from pyDL.utils.rng import make_numpy_rng
 
 
 def resolve_iterator_class(mode):
     return {'sequential':    SequentialSubsetIterator,
-            'shuffle':       ShuffledSequentialSubsetIterator,
+            'random':       ShuffledSequentialSubsetIterator,
             None:            None}.get(mode, SequentialSubsetIterator)
 
 
@@ -53,6 +54,8 @@ class SequentialSubsetIterator(SubsetIterator):
     def __init__(self, data_size, batch_size, rng):
         self.data_size = data_size
         self.batch_size = batch_size
+        if rng is None:
+            rng = make_numpy_rng()
         self.rng = rng
         self.idx = 0
     
@@ -87,7 +90,7 @@ class ShuffledSequentialSubsetIterator(SequentialSubsetIterator):
         stop = self.idx + self.batch_size
         if stop > self.data_size:
             stop = self.data_size
-        rval = self.shuffled_indices[self.idx, stop]
+        rval = self.shuffled_indices[self.idx : stop]
         self.idx = stop
         
         return rval
@@ -113,7 +116,7 @@ class DataIterator(object):
                 raise ValueError('%s: `subset_iterator` is None' % type(self))
             indices = self.subset_iterator.subnext()
         # a tuple is returned at each iterations
-        return (self.data.get(indices),)
+        return self.data.get(indices)
         
     def __next__(self):
         return self.next()

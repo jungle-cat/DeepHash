@@ -11,6 +11,7 @@ from pyDL.utils import flatten
 
 class State(object):
     '''
+    A data description class of mini-batched data. 
     '''
 
     @property
@@ -20,6 +21,9 @@ class State(object):
 
 
 class TypedState(State):
+    '''
+    A data description class of typed mini-batched data. 
+    '''
     def __init__(self, dtype):
         if dtype is None:
             dtype = theano.config.floatX
@@ -36,6 +40,17 @@ class TypedState(State):
         self._dtype = dtype
     
 class VectorState(TypedState):
+    '''
+    A data description class of mini-batched data which is defined as a fixed
+    length vectors.
+    
+    Paramters
+    ---------
+    dims : int
+        Dimensionality of a vector of this state.
+    dtype : str, optional
+        Value type of the vector of this state.
+    '''
     def __init__(self, dims, dtype=theano.config.floatX):
         super(VectorState, self).__init__(dtype)
         
@@ -50,7 +65,10 @@ class VectorState(TypedState):
     
     @property
     def as_theano_args(self):
-        return tensor.matrix(dtype=self.dtype)
+        if self.dims > 1:
+            return tensor.matrix(dtype=self.dtype)
+        else:
+            return tensor.vector(dtype=self.dtype)
 
 class Conv2DState(TypedState):
     def __init__(self, shape, nchannels, dtype=theano.config.floatX):
