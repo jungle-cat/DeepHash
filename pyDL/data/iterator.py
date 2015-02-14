@@ -155,3 +155,26 @@ class CompositeDataIterator(object):
         
         rval = [iterator.next(indices) for iterator in self.iterators]
         return tuple(rval)
+    
+class TransformedDataIterator(object):
+    def __init__(self, rawiter, transformer, subset_iterator, **kwargs):
+        
+        self.rawiter = rawiter
+        self.transformer = transformer
+        self.subset_iterator = subset_iterator
+        
+    def __iter__(self):
+        return self
+    
+    def next(self, indices=None):
+        if indices is None:
+            if self.subset_iterator is None:
+                raise ValueError('%s: subset_iterator is None' % type(self))
+            indices = self.subset_iterator.subnext()
+            
+        raw_data = self.rawiter.next(indices)
+        
+        if callable(self.transformer):
+            return self.transformer(raw_data)
+        else:
+            return raw_data

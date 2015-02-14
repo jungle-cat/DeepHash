@@ -8,9 +8,10 @@ Created on Feb 2, 2015
 from pyDL.data.iterator import resolve_iterator_class, \
                                SubsetIterator,\
                                DataIterator,\
-                               CompositeDataIterator
+                               CompositeDataIterator,\
+                               TransformedDataIterator
 
-class DataSet(object):
+class Dataset(object):
     
     def iterator(self, batch_size, mode='sequential', rng=None, **kwargs):
         if not mode:
@@ -21,7 +22,7 @@ class DataSet(object):
         raise NotImplementedError('%s does not implement `get`.' % type(self))
     
 
-class DataMatrix(DataSet):
+class DataMatrix(Dataset):
     def __init__(self, x, axes=None):
         self.data = x
         self.axes = axes
@@ -43,7 +44,7 @@ class DataMatrix(DataSet):
     def size(self):
         return self.data.shape[0]
     
-class CompositeDataMatrix(DataSet):
+class CompositeDataMatrix(Dataset):
     def __init__(self, datas, consistency=True):
         self.datas = datas
         self.consistency = consistency
@@ -86,3 +87,26 @@ class CompositeDataMatrix(DataSet):
         return CompositeDataIterator(iterators=iterators, 
                                      subset_iterator=mode(self.size, batch_size, rng), 
                                      consistency=self.consistency)
+
+class TransformedDataMatrix(Dataset):
+    def __init__(self, raw_data, transformer):
+        self._raw_data = raw_data
+        self._trans = transformer
+    
+    @property
+    def size(self):
+        return self._raw_data.size
+        
+    def _iterator(self, batch_size, mode=None, rng=None, **kwargs):
+        if not isinstance(mode, SubsetIterator):
+            mode = resolve_iterator_class(mode)
+        
+        if mode is None:
+            subset_iterator = None
+        else:
+            subset_iterator = mode(self.size, batch_size, rng)
+        
+        rawiter = self._raw_data._iterator(batch_size, None, rng, **kwargs)
+        return TransformedDataIterator(rawiter=rawiter, 
+                                      transformer=self._trans, 
+                                      subset_iterator=mode(self.size, batch_size, rng))
