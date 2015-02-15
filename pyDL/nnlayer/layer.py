@@ -13,8 +13,13 @@ from theano.tensor.nnet import conv2d
 from pyDL.state import Conv2DState
 from pyDL.functions import sigmoid
 from pyDL.utils.rng import make_numpy_rng
+from pyDL.nnlayer.model import Model
 
-class Layer(object):
+
+class Layer(Model):
+    
+    def __call__(self, *args, **kwargs):
+        return self.fprop(*args, **kwargs)
     
     def fprop(self, symin):
         raise NotImplementedError('')
