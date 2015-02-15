@@ -15,9 +15,13 @@ def make_numpy_rng(seed=None):
     return RandomState(seed)
 
 
-def make_theano_rng(seed_or_rng):
+def make_theano_rng(seed_or_rng=None):
+    if seed_or_rng is None:
+        seed_or_rng = make_numpy_rng()
+        
     if isinstance(seed_or_rng, RandomState):
         seed = seed_or_rng.randint(2**30)
     else:
         seed = seed_or_rng
+    
     return RandomStreams(seed)
