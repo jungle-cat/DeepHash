@@ -4,6 +4,7 @@ Created on Feb 2, 2015
 @author: Feng
 '''
 
+import numpy
 
 from pyDL.data.iterator import resolve_iterator_class, \
                                SubsetIterator,\
@@ -90,6 +91,9 @@ class CompositeDataMatrix(Dataset):
 
 class TransformedDataMatrix(Dataset):
     def __init__(self, raw_data, transformer):
+        if isinstance(raw_data, numpy.ndarray):
+            raw_data = DataMatrix(x=raw_data)
+        
         self._raw_data = raw_data
         self._trans = transformer
     
@@ -109,4 +113,4 @@ class TransformedDataMatrix(Dataset):
         rawiter = self._raw_data._iterator(batch_size, None, rng, **kwargs)
         return TransformedDataIterator(rawiter=rawiter, 
                                       transformer=self._trans, 
-                                      subset_iterator=mode(self.size, batch_size, rng))
+                                      subset_iterator=subset_iterator)
