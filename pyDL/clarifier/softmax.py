@@ -61,3 +61,13 @@ class Softmax(Layer):
         z = tensor.dot(symin, self._weights) + self._bias
         return tensor.nnet.softmax(z)
     
+    
+    def modify_updates(self, updates, **kwargs):
+        if hasattr(self, 'max_norm') and self.max_norm is not None:
+            weights = self._weights
+            if weights in updates:
+                new_weights = updates[weights]
+                row_norms = tensor.sqrt(tensor.sum(tensor.sqr(new_weights), axis=1))
+                desired_norms = tensor.clip(row_norms, 0, 1.)
+                scales = desired_norms / (1e-7 + row_norms)
+                updates[weights] = new_weights * scales.dimshuffle(0, 'x')
