@@ -8,13 +8,12 @@ Created on Jan 28, 2015
 import numpy 
 import theano
 from theano import tensor
-from theano.tensor.nnet import sigmoid
 
 # Local imports
 from pyDL.nnlayer.layer import Layer
 from pyDL.state import VectorState
 from pyDL.utils.rng import make_numpy_rng
-
+from pyDL.functions import sigmoid
 
 class AbstractAutoencoder(Layer):
     def encode(self, inputs):
@@ -32,8 +31,7 @@ class AbstractAutoencoder(Layer):
 
 class Autoencoder(AbstractAutoencoder):
     def __init__(self, nout, numpy_rng=None, act_enc=sigmoid, act_dec=sigmoid, 
-                 inputs_state=None, numpy_rng=None, weights=None, visbias=None, 
-                 hidbias=None):
+                 inputs_state=None, weights=None, visbias=None, hidbias=None):
         
         self.nout = nout
         self.act_enc = act_enc
@@ -47,15 +45,15 @@ class Autoencoder(AbstractAutoencoder):
         
     def setup(self, inputs_state, numpy_rng=None, weights=None, visbias=None, 
               hidbias=None, **kwargs):
-        if isinstance(inputs_state, int):
+        if isinstance(inputs_state, (int, long)):
             inputs_state = VectorState(inputs_state)
         
-        nvis, = inputs_state.shape
+        nvis = inputs_state.dims
         nhid = self.nout
         
         if numpy_rng is None:
             numpy_rng = make_numpy_rng()
-        self.rng = numpy_rng
+        self.numpy_rng = numpy_rng
 
         
         if weights is None:
@@ -95,7 +93,7 @@ class Autoencoder(AbstractAutoencoder):
     
     def decode(self, hiddens):
         if isinstance(hiddens, tensor.Variable):
-            return self.act_dec(self._visbias + tensor.dot(_hiddens, self._weights.T))
+            return self.act_dec(self._visbias + tensor.dot(hiddens, self._weights.T))
         else:
             return [self.decode(v) for v in hiddens]
         
