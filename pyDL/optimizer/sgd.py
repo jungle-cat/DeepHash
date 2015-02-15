@@ -99,5 +99,7 @@ class SGD(object):
         iterator = dataset.iterator(batch_size=batch_size, mode=mode)
         
         for batch in iterator:
+            if not isinstance(batch, (tuple, list)):
+                batch = batch, 
             self.sgd_update(*batch)
         
