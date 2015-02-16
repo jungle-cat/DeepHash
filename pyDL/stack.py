@@ -4,6 +4,10 @@ Created on Feb 13, 2015
 @author: Feng
 '''
 
+import theano
+
+from pyDL.utils import flatten
+
 
 class Stack(object):
     '''
@@ -17,9 +21,22 @@ class Stack(object):
     
     def __init__(self, models):
         self._models = models
+        self._func = None
+        self._params = set([p for m in models for p in m.params])
         
-        self._params = set([p for p in m.params for m in models])
+    def function(self, name=None):
+        instate = self._models[0].instate
+        theano_args = flatten([instate.as_theano_args])
         
+        return theano.function(theano_args,
+                               self(*theano_args),
+                               name=name)
+        
+    def perform(self, *args):
+        if self._func is None:
+            self._func = self.function('perform')
+        return self._func(*args)
+    
     def __call__(self, symin):
         rval = symin
         for m in self._models:

@@ -175,6 +175,6 @@ class TransformedDataIterator(object):
         raw_data = self.rawiter.next(indices)
         
         if callable(self.transformer):
-            return self.transformer(raw_data)
+            return self.transformer.perform(raw_data)
         else:
             return raw_data
