@@ -6,6 +6,7 @@ Created on Feb 1, 2015
 
 from collections import OrderedDict
 import theano
+from theano import tensor
 
 
 from pyDL.utils import check_type_constraints
@@ -67,7 +68,11 @@ class Momentum(LearningRule):
     def __init__(self, init_momentum, nesterov_momentum=False):
         assert init_momentum >= 0. and init_momentum < 1.
         
-        self.momentum = theano.shared(init_momentum, 'momentum')
+        shared_momentum = theano.shared(init_momentum, 'momentum')
+        if shared_momentum.dtype != theano.config.floatX:
+            shared_momentum = tensor.cast(shared_momentum, dtype=theano.config.floatX)
+            
+        self.momentum = shared_momentum
         self.nesterov_momentum = nesterov_momentum
         
     

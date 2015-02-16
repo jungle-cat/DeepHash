@@ -6,6 +6,7 @@ Created on Jan 28, 2015
 from collections import OrderedDict
 
 import theano
+from theano import tensor
 
 from pyDL.optimizer.learning_rule import LearningRule
 from pyDL.utils import flatten
@@ -38,7 +39,10 @@ class SGD(object):
             lr = learning_rate.get(param, default_learning_rate)
             if lr is None:
                 raise ValueError('default learning rate is not provided.')
-            self.learning_rate[param] = theano.shared(value=lr)
+            shared_lr = theano.shared(value=lr)
+            if shared_lr.dtype != theano.config.floatX:
+                shared_lr = tensor.cast(shared_lr, dtype=theano.config.floatX)
+            self.learning_rate[param] = shared_lr
 
         # initialize learning rule which is a dictionary of LearningRule with param
         # as its key, so that, different learning rule can be specified to different
