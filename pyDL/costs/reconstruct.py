@@ -6,11 +6,11 @@ Created on Feb 14, 2015
 
 from theano import tensor
 
-from pyDL.costs.cost import Cost, ModelMixIOState
+from pyDL.costs.cost import Cost, ModelInState
 
 
 
-class ReconstructCost(Cost):
+class ReconstructCost(ModelInState, Cost):
     
     def __init__(self, model):
         super(ReconstructCost, self).__init__(model)
@@ -21,13 +21,12 @@ class ReconstructCost(Cost):
                                   'static method')
     
     def expr(self, symin, **kwargs):
-        x = symin[0]
+        if isinstance(symin, (tuple, list)):
+            x = symin[0]
+        else:
+            x = symin
         
         return self.cost(x, self.model.reconstruct(x))
-    
-    @property
-    def instate(self):
-        return self.model.instate
     
 
 class MeanSquareReconstructError(ReconstructCost):

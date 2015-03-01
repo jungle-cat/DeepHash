@@ -71,3 +71,9 @@ class ModelMixIOState(object):
     @property
     def instate(self):
         return CompositeState([self.model.instate, self.model.outstate])
+
+class ModelInState(object):
+    
+    @property
+    def instate(self):
+        return self.model.instate
