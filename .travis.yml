@@ -26,7 +26,7 @@ script:
   - export PYTHONPATH=$PYTHONPATH:$PWD
   
   # run the testing scripts
-  - python pyTest/test_hash.py
+  # - python pyTest/test_hash.py
 
 
 #after_script:
