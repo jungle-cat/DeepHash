@@ -3,11 +3,9 @@ Created on Feb 1, 2015
 
 @author: Feng
 '''
-
+import numpy
 import theano
 from theano import tensor
-
-from pyDL.utils import flatten
 
 class State(object):
     '''
@@ -39,6 +37,15 @@ class TypedState(State):
             raise TypeError('dtype can not be set None.')
         self._dtype = dtype
     
+    def __eq__(self, other):
+        return (type(self) == type(other) and
+                self._dtype == self._dtype)
+    
+    def __hash__(self):
+        return hash((type(self), self._dtype))
+
+    
+    
 class VectorState(TypedState):
     '''
     A data description class of mini-batched data which is defined as a fixed
@@ -54,21 +61,25 @@ class VectorState(TypedState):
     def __init__(self, dims, dtype=theano.config.floatX):
         super(VectorState, self).__init__(dtype)
         
-        self.dims = dims
+        self._dims = dims
     
     def __eq__(self, other):
         return (type(self) == type(other) and
-                self.dims == self.dims)
+                self._dims == self._dims)
     
     def __hash__(self):
-        return hash((type(self), self.dims, self.dtype))
+        return hash((type(self), self._dims, self._dtype))
     
     @property
     def as_theano_args(self):
-        if self.dims > 1:
-            return tensor.matrix(dtype=self.dtype)
+        if self._dims > 1:
+            return tensor.matrix(dtype=self._dtype)
         else:
-            return tensor.vector(dtype=self.dtype)
+            return tensor.vector(dtype=self._dtype)
+    
+    @property
+    def dims(self):
+        return self._dims
 
 class Conv2DState(TypedState):
     def __init__(self, shape, nchannels, dtype=theano.config.floatX):
@@ -76,13 +87,12 @@ class Conv2DState(TypedState):
         
         self.shape = shape
         self.nchannels = nchannels
-        self.dtype = dtype
     
     def __eq__(self, other):
         return (type(self) == type(other) and 
                 self.shape == other.shape and
                 self.nchannels == other.nchannels and
-                self.dtype == other.dtype)
+                self._dtype == other._dtype)
         
     def __hash__(self):
         return hash((type(self), 
@@ -93,6 +103,25 @@ class Conv2DState(TypedState):
     @property
     def as_theano_args(self):
         return tensor.tensor4(dtype=self.dtype)
+    
+    @property
+    def dims(self):
+        return numpy.prod(self.shape) * self.nchannels
+    
+    def format_as(self, batch, state):
+        if isinstance(state, VectorState):
+            dims = self.dims
+            
+            result = batch.reshape((batch.shape[0], dims))
+        elif isinstance(state, Conv2DState):
+            result = batch
+        else:
+            raise NotImplementedError('%s does not implement convertion to %s'
+                                      % (str(self), str(state)))
+        if result.dtype != state.dtype:
+            result = tensor.cast(result, state.dtype)
+        return result
+            
 
 class CompositeState(State):
     def __init__(self, states):
