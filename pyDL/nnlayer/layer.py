@@ -158,3 +158,18 @@ class PoolingLayer(Layer):
         return self._pooler(symin)
 
 
+class DataProxyLayer(Layer):
+    def __init__(self, desired_state, inputs_state=None):
+        self._desired_state = desired_state
+        
+        if inputs_state is not None:
+            DataProxyLayer.setup(self, inputs_state)
+    
+    def setup(self, inputs_state, **kwargs):
+        self._instate = inputs_state
+        self._outstate = self._desired_state
+        self._params = []
+    
+    def fprop(self, symin):
+        symin = self.instate.format_as(symin, self._desired_state)
+        return symin
