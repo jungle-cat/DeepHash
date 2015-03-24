@@ -7,17 +7,17 @@ Created on Jan 26, 2015
 import numpy
 
 import theano
+from theano import tensor
 from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv2d
 
-from pyDL.state import Conv2DState
+from pyDL.state import Conv2DState, VectorState
 from pyDL.functions import sigmoid
 from pyDL.utils.rng import make_numpy_rng
 from pyDL.nnlayer.model import Model
 
 
 class Layer(Model):
-    
     def __call__(self, *args, **kwargs):
         return self.fprop(*args, **kwargs)
     
@@ -44,6 +44,51 @@ class Layer(Model):
     def outstate(self):
         return self._outstate
 
+class FullConnectLayer(Layer):
+    def __init__(self, nout, activator=sigmoid, numpy_rng=None, inputs_state=None, 
+                 weights=None, bias=None, **kwargs):
+        self.nout = nout
+        self.act = activator
+        
+        if inputs_state is not None:
+            FullConnectLayer.setup(self, inputs_state, numpy_rng, weights, bias)
+    
+    def setup(self, inputs_state, numpy_rng=None, weights=None, bias=None, **kwargs):
+        if isinstance(inputs_state, int):
+            inputs_state = VectorState(dims=inputs_state)
+        
+        nvis = self.inputs_state.dims
+        nhid = self.nout
+        
+        if numpy_rng is None:
+            numpy_rng = make_numpy_rng()
+        self.numpy_rng = numpy_rng
+        
+        if weights is None:
+            init_weights = numpy.asarray(
+                self.numpy_rng.uniform(low=-4*numpy.sqrt(6. / (nvis + nhid)),
+                                       high=4*numpy.sqrt(6. / (nvis + nhid)),
+                                       size=(nvis, nhid)),
+                dtype=theano.config.floatX
+            )
+            weights = theano.shared(value=init_weights, name='w', borrow=True)
+        
+        if bias is None:
+            bias = theano.shared(value=numpy.zeros(nhid, dtype=theano.config.floatX),
+                                 name='bias', borrow=True)
+
+        self._weights = weights
+        self._bias = bias
+        
+        # set the state of inputs and outputs
+        self._instate = inputs_state
+        self._outstate = VectorState(nhid)
+        
+        # set the parameters of auto encoder
+        self._params = [self._weights, self._bias]
+    
+    def fprop(self, symin):
+        return self.act(self._bias + tensor.dot(symin, self._weights))
 
 class Conv2DLayer(Layer):
     def __init__(self, nkernels, kernel_size, activator=sigmoid, numpy_rng=None, 
@@ -173,3 +218,22 @@ class DataProxyLayer(Layer):
     def fprop(self, symin):
         symin = self.instate.format_as(symin, self._desired_state)
         return symin
+
+class CompositeLayer(Layer):
+    def __init__(self, layers):
+        self._layers = layers
+        self._params = []
+    
+    def setup(self, **kwargs):
+        pass
+    
+    def fprop(self, symin):
+        ret = []
+        if isinstance(symin, (tuple, list)):
+            for layer, input_arg in zip(self._layers, symin):
+                ret.append(layer.fprop(input_arg))
+        else:
+            for layer in self._layers:
+                ret.append(layer.fprop(symin))
+        return tuple(ret)
+
