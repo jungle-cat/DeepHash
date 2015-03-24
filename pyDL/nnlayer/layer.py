@@ -54,10 +54,10 @@ class FullConnectLayer(Layer):
             FullConnectLayer.setup(self, inputs_state, numpy_rng, weights, bias)
     
     def setup(self, inputs_state, numpy_rng=None, weights=None, bias=None, **kwargs):
-        if isinstance(inputs_state, int):
+        if isinstance(inputs_state, (int, long)):
             inputs_state = VectorState(dims=inputs_state)
         
-        nvis = self.inputs_state.dims
+        nvis = inputs_state.dims
         nhid = self.nout
         
         if numpy_rng is None:
@@ -84,7 +84,7 @@ class FullConnectLayer(Layer):
         self._instate = inputs_state
         self._outstate = VectorState(nhid)
         
-        # set the parameters of auto encoder
+        # set the parameters
         self._params = [self._weights, self._bias]
     
     def fprop(self, symin):
