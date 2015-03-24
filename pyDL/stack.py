@@ -24,6 +24,24 @@ class Stack(object):
         self._func = None
         self._params = set([p for m in models for p in m.params])
         
+    @property
+    def params(self):
+        return self._params
+    
+    @property
+    def instate(self):
+        return self._model.instate
+    
+    @property
+    def outstate(self):
+        return self._model.outstate
+    
+    def modify_updates(self, updates, **kwargs):
+        pass
+    
+    def fprop(self, symin):
+        return self.__call__(symin)
+    
     def function(self, name=None):
         instate = self._models[0].instate
         theano_args = flatten([instate.as_theano_args])
