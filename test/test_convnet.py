@@ -40,7 +40,7 @@ class SoftmaxCost(object):
         return gradients
 
 def get_error_monitor(model):
-    x = tensor.matrix()
+    x = tensor.tensor4()
     y = tensor.vector()
 
     y_pred = tensor.argmax(model(x), axis=1)
@@ -49,22 +49,25 @@ def get_error_monitor(model):
     f = theano.function([x,y], errors,allow_input_downcast=True)
     return f
 
-def get_softmax_trainer(model):
+def get_trainer(model):
     cost = SoftmaxCost(model)
-    sgd = SGD(0.0003, model, cost)
+    sgd = SGD(0.003, model, cost)
     return sgd
 
 
 def test_convnet():
     trainset, validset, testset = load_mnist()
     trainx, trainy = trainset
+    testx, testy = testset
+    trainx = trainx.reshape((trainx.shape[0], 1, 28, 28))
+    testx = testx.reshape((testx.shape[0], 1, 28, 28))
+
+    
 
     total_num = trainy.shape[0]
-    new_trainy = numpy.zeros((total_num, 10), dtype='int64')
+    new_trainy = numpy.zeros((total_num, 10), dtype='int32')
 
     new_trainy[numpy.arange(total_num), trainy] = 1
-    ninputs = trainx.shape[1]
-
     
     layers = []
     
@@ -75,7 +78,7 @@ def test_convnet():
     p1 = PoolingLayer(pool_size=(2,2), inputs_state=c1.outstate)
      
     dproxy = DataProxyLayer(VectorState(p1.outstate.dims), inputs_state=p1.outstate)
-     
+    
     softmax = Softmax(nclasses=10, inputs_state=dproxy.outstate)
 
     layers.append(c0)
@@ -85,17 +88,17 @@ def test_convnet():
     layers.append(dproxy)
     layers.append(softmax)
     
-    trainx = trainx.reshape((total_num, 1, 28, 28))
     
-#     supervised_dataset = CompositeDataMatrix(
-#                             datas=[TransformedDataMatrix(raw_data=trainx, transformer=Stack(layers)),
-#                                    DataMatrix(trainy)])
-#     
-#     trainer = get_softmax_trainer(layers[-1])
-    
+    supervised_dataset = CompositeDataMatrix(datas=[DataMatrix(trainx), DataMatrix(trainy)])
+     
     model = Stack(layers)
-    ret = model.perform(trainx)
-    print ret.shape
+    trainer = get_trainer(model)
+
+    f = get_error_monitor(model)
+    for i in xrange(3000):
+        if i % 10 == 0:
+            print i, ':\t', f(testx, testy)
+        trainer.train(supervised_dataset, batch_size=28)
 
 if __name__ == '__main__':
     test_convnet()
