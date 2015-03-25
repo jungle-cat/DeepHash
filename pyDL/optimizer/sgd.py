@@ -12,17 +12,20 @@ from pyDL.optimizer.learning_rule import LearningRule
 from pyDL.utils import flatten
 
 class SGD(object):
+    '''
+    Stochastic Gradient Descent (SGD) on minibatches of training examples.
+    
+    Parameters
+    ----------
+    learning_rate: float or dict of floats or list of floats
+        Learning_rate specifies the updating velocity of the parameters
+    batch_size: int
+        Number of samples for each batch training.
+    learning_rule: LearningRule or dict of LearningRules
+        Learning_rule specifies how the parameters updating is perfomed 
+        during stochastic gradient descent.
+    '''
     def __init__(self, learning_rate, model, cost, learning_rule=None):
-        '''
-        Parameters
-        ----------
-        learning_rate: float or dict of floats or list of floats
-            learning_rate specifies the updating velocity of the parameters
-        batch_size: int
-        learning_rule: LearningRule or dict of LearningRules
-            learning_rule specifies how the parameters updating is perfomed 
-            during stochastic gradient descent.
-        '''
         
         params = model.params
         
@@ -66,6 +69,8 @@ class SGD(object):
         theano_args = self.cost.instate.as_theano_args
         theano_args = list(flatten([theano_args]))
         
+        cost_func = self.cost.expr(theano_args)
+        
         params = model.params
         self.params = params
 
@@ -83,6 +88,7 @@ class SGD(object):
         model.modify_updates(updates=updates, grads=grads)
 
         self.sgd_update = theano.function(theano_args, 
+                                          outputs=cost_func,
                                           updates=updates,
                                           name='sgd_update',
                                           on_unused_input='ignore')
@@ -93,8 +99,8 @@ class SGD(object):
         
         Parameters
         ----------
-        dataset: DataSet
-            The DataSet interface implement iterator for getting each minibatch 
+        dataset: Dataset
+            The Dataset interface implement iterator for getting each minibatch 
             during training.
         batch_size: int
             The size of minibatch.
@@ -102,8 +108,13 @@ class SGD(object):
         
         iterator = dataset.iterator(batch_size=batch_size, mode=mode)
         
+        count = 0.
+        costs = 0.
         for batch in iterator:
             if not isinstance(batch, (tuple, list)):
                 batch = batch, 
-            self.sgd_update(*batch)
+            costs += self.sgd_update(*batch)
+            count += 1.
+        
+        return costs/count
         
