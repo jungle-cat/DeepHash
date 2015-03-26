@@ -92,6 +92,10 @@ class SGD(object):
                                           updates=updates,
                                           name='sgd_update',
                                           on_unused_input='ignore')
+    
+    def update_learningrate(self, update_lr):
+        for item in self.learning_rate.itervalues():
+            item.set_value(item.get_value() * update_lr)
         
     def train(self, dataset, batch_size, mode='random'):
         '''
