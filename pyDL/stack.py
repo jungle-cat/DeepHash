@@ -23,6 +23,7 @@ class Stack(object):
         self._models = models
         self._func = None
         self._params = set([p for m in models for p in m.params])
+        self._params = list(self._params)
         
     @property
     def params(self):
