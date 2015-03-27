@@ -3,6 +3,7 @@ Created on Jan 28, 2015
 
 @author: Feng
 '''
+import numpy
 from collections import OrderedDict
 
 import theano
@@ -42,9 +43,8 @@ class SGD(object):
             lr = learning_rate.get(param, default_learning_rate)
             if lr is None:
                 raise ValueError('default learning rate is not provided.')
-            shared_lr = theano.shared(value=lr)
-            if shared_lr.dtype != theano.config.floatX:
-                shared_lr = tensor.cast(shared_lr, dtype=theano.config.floatX)
+            shared_lr = theano.shared(value=numpy.cast[theano.config.floatX](lr), 
+                                      allow_downcast=True)
             self.learning_rate[param] = shared_lr
 
         # initialize learning rule which is a dictionary of LearningRule with param
@@ -95,7 +95,7 @@ class SGD(object):
     
     def update_learningrate(self, update_lr):
         for item in self.learning_rate.itervalues():
-            item.set_value(item.get_value() * update_lr)
+            item.set_value(numpy.cast[theano.config.floatX](item.get_value() * update_lr))
         
     def train(self, dataset, batch_size, mode='random'):
         '''
